@@ -35,17 +35,17 @@ input:focus,textarea:focus{border-color:var(--brand)}
 .send{width:100%;border:0;border-radius:999px;background:var(--brand);color:#fff;font:600 16px Poppins;padding:16px;margin-top:14px;cursor:pointer}
 :root:not([data-theme="light"]) .send{color:#2a1620}
 .empty{color:var(--mute);font-size:13px}
-.hide{display:none}
+.hide{display:none!important}
+body{padding-bottom:84px}.bar{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:560px;margin:0 auto;background:var(--card);border-radius:22px 22px 0 0;padding:12px 18px calc(12px + env(safe-area-inset-bottom,0px));box-shadow:0 -4px 18px rgba(140,42,87,.18);font-size:14px;color:var(--brand)}.bar button{border:0;border-radius:999px;background:var(--brand);color:#fff;font:600 14px Poppins;padding:11px 20px;cursor:pointer}:root:not([data-theme="light"]) .bar button{color:#2a1620}
 </style></head><body><main>
 <h1>Place Your Order</h1>
 <p class="sub">Tap a size to add it to your order, then send it to us on WhatsApp.</p>
 <div id="menu"></div>
 
-<div class="card"><h2>Your Order</h2><div id="cart"><p class="empty">Nothing added yet.</p></div><div class="total"><span>Total</span><span id="total">R0</span></div></div>
+<div class="card" id="oc"><h2>Your Order</h2><div id="cart"><p class="empty">Nothing added yet.</p></div><div class="total"><span>Total</span><span id="total">R0</span></div></div>
 
 <div class="card"><h2>Your Details</h2>
 <label for="name">Full name</label><input id="name" autocomplete="name"><div class="err">Please enter your name.</div>
-<label for="phone">Phone / WhatsApp number</label><input id="phone" type="tel" autocomplete="tel"><div class="err">Please enter a valid number.</div>
 <label>Collection or delivery</label>
 <div class="pills"><button class="pill on" data-m="Collection">Collection</button><button class="pill" data-m="Delivery">Delivery</button></div>
 <div id="addrW" class="hide"><label for="addr">Delivery address</label><textarea id="addr" rows="2" autocomplete="street-address"></textarea><div class="err">Please enter your address.</div></div>
@@ -58,6 +58,7 @@ input:focus,textarea:focus{border-color:var(--brand)}
 <p class="note" style="text-align:center;margin-top:10px">Delivery fees and final confirmation will be sent by the owner.</p>
 </div>
 </main>
+<div id="bar" class="bar hide"><span id="bc"></span><button id="bv">Review order</button></div>
 <script>
 const _w="=kzM5MDOzEzN2cjM";const WHATSAPP_NUMBER=()=>atob(_w.split("").reverse().join(""));
 const S=(n,p)=>({l:n,p});
@@ -70,8 +71,8 @@ const MENU=[
  {n:"Choc Ganache Cupcakes",d:"Moist chocolate cupcakes, rich ganache",o:trio(12,24,36,180,360,540)},
  {n:"Cream Cheese & Caramel",d:"Choc cupcakes, cream cheese frosting, caramel drizzle",o:trio(12,24,36,200,400,600)}]},
 {t:"Biscuits",n:"box of 9, 12 or 15",i:[
- {n:"Biscuits",d:"Classic homemade biscuits",o:trio(9,12,15,180,240,300)},
- {n:"Choc Lover Biscuits",d:"Loaded with extra chocolate",o:trio(9,12,15,200,270,335)}]},
+ {n:"Choc Chip Biscuits",d:"Classic homemade choc chip biscuits",o:trio(9,12,15,180,240,300)},
+ {n:"Coffee Lovers Biscuits",d:"Rich, coffee-flavoured homemade biscuits",o:trio(9,12,15,200,270,335)}]},
 {t:"Loaves & Favours",n:"",i:[
  {n:"Banana loaf",d:"Soft, moist & from scratch",o:[S("Each",50)]},
  {n:"Orange loaf",d:"Zesty orange, soft crumb",o:[S("Each",80)]},
@@ -101,29 +102,34 @@ const desc=x=>x.single?x.name:`${x.name} (${x.l} pcs)`;
 function render(){
  document.querySelectorAll("[data-k]").forEach(b=>{const q=cart[b.dataset.k]||0;b.classList.toggle("on",q>0);const o=b.querySelector("i");if(o)o.remove();if(q)b.insertAdjacentHTML("beforeend",`<i>${q}</i>`)});
  const ks=Object.keys(cart).filter(k=>cart[k]>0);let t=0;
- $("cart").innerHTML=ks.length?ks.map(k=>{const x=info(k);t+=x.p*cart[k];return`<div class="row"><div>${desc(x)}<small>R${x.p} each</small></div><div class="step"><button data-m="${k}">−</button><b>${cart[k]}</b><button data-a="${k}">+</button></div></div>`}).join(""):'<p class="empty">Nothing added yet.</p>';
- $("total").textContent="R"+t;return t}
+ $("cart").innerHTML=ks.length?ks.map(k=>{const x=info(k);t+=x.p*cart[k];return`<div class="row"><div><b>${desc(x)}</b><small>R${x.p} each · R${x.p*cart[k]}</small></div><div class="step"><button data-d="${k}">−</button><b>${cart[k]}</b><button data-a="${k}">+</button><button data-x="${k}" title="Remove" style="margin-left:4px">✕</button></div></div>`}).join(""):'<p class="empty">Nothing added yet.</p>';
+ $("total").textContent="R"+t;
+ const n=ks.reduce((a,k)=>a+cart[k],0);$("bar").classList.toggle("hide",!n);$("bc").innerHTML=`<b>${n} item${n>1?"s":""}</b> · R${t}`;return t}
 document.addEventListener("click",e=>{
  const b=e.target.closest("button");if(!b)return;
  if(b.dataset.k){cart[b.dataset.k]=(cart[b.dataset.k]||0)+1;render()}
  else if(b.dataset.a){cart[b.dataset.a]++;render()}
- else if(b.dataset.m){cart[b.dataset.m]--;render()}
+ else if(b.dataset.d){cart[b.dataset.d]--;render()}
+ else if(b.dataset.x){delete cart[b.dataset.x];render()}
  else if(b.dataset.m===undefined&&b.parentElement.querySelector("[data-m]")&&!b.dataset.k&&b.classList.contains("pill")){}
 });
 let mode="Collection";
 document.querySelectorAll(".pills .pill[data-m]").forEach(b=>b.addEventListener("click",()=>{
  b.parentElement.querySelectorAll(".pill").forEach(x=>x.classList.remove("on"));b.classList.add("on");mode=b.dataset.m;$("addrW").classList.toggle("hide",mode!=="Delivery")}));
+$("bv").onclick=()=>$("oc").scrollIntoView({behavior:"smooth"});
 $("date").min=new Date().toISOString().split("T")[0];
 function bad(id,c){$(id).classList.toggle("bad",c);return c}
 $("send").onclick=()=>{
  const t=render();
- const v=[bad("name",!$("name").value.trim()),bad("phone",$("phone").value.replace(/\D/g,"").length<9),bad("date",!$("date").value)];
+ const v=[bad("name",!$("name").value.trim()),bad("date",!$("date").value)];
  if(mode==="Delivery")v.push(bad("addr",!$("addr").value.trim()));else bad("addr",false);
  if(!t){alert("Please add at least one item to your order.");return}
  if(v.some(Boolean)){document.querySelector(".bad").scrollIntoView({behavior:"smooth",block:"center"});return}
  const lines=Object.keys(cart).filter(k=>cart[k]>0).map(k=>{const x=info(k);return`• ${cart[k]} x ${desc(x)} – R${x.p*cart[k]}`});
  const d=new Date($("date").value+"T00:00").toLocaleDateString("en-ZA",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
- const msg=`*NEW ORDER*\n\n*Name:* ${$("name").value.trim()}\n*Phone:* ${$("phone").value.trim()}\n*Method:* ${mode}${mode==="Delivery"?`\n*Address:* ${$("addr").value.trim()}`:""}\n*Date needed:* ${d}\n\n*Items:*\n${lines.join("\n")}\n\n*Total:* R${t}${$("notes").value.trim()?`\n\n*Notes:* ${$("notes").value.trim()}`:""}`;
+ const nm=$("name").value.trim(),nt=$("notes").value.trim();
+ const how=mode==="Delivery"?`I'd like my order delivered on *${d}* to:\n${$("addr").value.trim()}`:`I'd like to collect my order on *${d}*.`;
+ const msg=`Hi Raaz Bakes!\nMy name is ${nm} and I'd like to place an order, please.\n\n🧁 *My order*\n${lines.join("\n")}\n\n*Total: R${t}*\n\n${how}${nt?`\n\nNotes: ${nt}`:""}\n\nThank you! 😊`;
  const url=`https://wa.me/${WHATSAPP_NUMBER()}?text=${encodeURIComponent(msg)}`;
  $("fb").classList.remove("hide");$("wa").href=url;window.lastMsg=msg;
  $("wa").click();$("fb").scrollIntoView({behavior:"smooth",block:"center"});
